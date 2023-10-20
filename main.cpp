@@ -65,9 +65,6 @@ int main() {
     int width = bmpHeader.width;
     int height = bmpHeader.height;
     int size = width * height * 3;
-    cout << width << endl;
-    cout << height << endl;
-    cout << size << endl;
     unsigned char* buff = new unsigned char[size];
     bmpImage.read(reinterpret_cast<char*>(buff), size);
 

@@ -1,107 +1,99 @@
 #include <iostream>
 #include <fstream>
-#include <windows.h>
-
 using namespace std;
+#pragma pack(push, 1)
 
-int main(){
+struct BMPHeader {
+    char signature[2];   // Сигнатура файла ('B' и 'M')
+    int fileSize;        // Размер файла в байтах
+    short reserved1;     // Зарезервированное значение
+    short reserved2;     // Зарезервированное значение
+    int dataOffset;      // Смещение данных пикселей от начала файла
 
-    BITMAPFILEHEADER header;
-    ifstream image(R"(image.bmp)", ifstream::binary);
-    if (!image){
-        cerr << "File opening failed!" << endl;
-        return 1;}
-    image.read(reinterpret_cast<char *>(&header), sizeof(header));
-    if (header.bfType != 0x4d42) {
-        cout << "Wrong file format!" << endl;
-        return 11;
-    }
+    // Дополнительные поля для заголовка BMP
+    int headerSize;      // Размер структуры заголовка BMP
+    int width;           // Ширина изображения в пикселях
+    int height;          // Высота изображения в пикселях
+    short colorPlanes;   // Количество плоскостей (должно быть 1)
+    short bitsPerPixel;  // Глубина цвета в битах
+    int compression;     // Метод сжатия (обычно без сжатия = 0)
+    int imageSize;       // Размер изображения в байтах (ширина * высота * глубина цвета)
+    int horizontalRes;   // Горизонтальное разрешение в пикселях на метр
+    int verticalRes;     // Вертикальное разрешение в пикселях на метр
+    int numColors;       // Количество использованных цветов (0 - все)
+    int importantColors; // Количество важных цветов (0 - все)
+};
 
-    image.read(reinterpret_cast<char*>(&header), sizeof(header));
-    unsigned long weight = header.bfSize;
-    cout << "The size of memory being allocated: " << weight << " bytes" << endl;
+#pragma pack(pop)
 
-
-    image.seekg(sizeof(BITMAPFILEHEADER));
-    BITMAPINFOHEADER info;
-    image.read(reinterpret_cast<char*>(&info), sizeof(BITMAPINFOHEADER));
-    int height = info.biHeight;
-    int width = info.biWidth;
-    int size = width * height;
-
-//    int pixel = info.biBitCount / 8;
-    char* buff = new char[3 * size];
-    unsigned long start = header.bfOffBits;
-
-    image.seekg(start);
-    image.read(buff, size*3);
-    info.biWidth = height;
-    info.biHeight = width;
-
-
-
-
-// вправо
-    char* rightRot = new char[3 * size];
-    for (int i = 0; i<width; ++i){
-        for (int j = 0; j<height; ++j){
-            int newIndexR = ((width-i-1) * height +j) *3;
-            int oldIndexR = (j*width +i) *3;
-
+void right(const unsigned char* oldFile, unsigned char* newFile, int width, int height) {
+    for (int i = 0; i < width; ++i) {
+        for (int j = 0; j < height; ++j) {
+            int newIndex = ((width-i-1) * height +j) *3;
+            int oldIndex = (j*width +i) *3;
             for (int k = 0; k<3; ++k)
-                rightRot[newIndexR + k] = buff[oldIndexR + k];}}
-
-    ofstream rightRotatedImage("Right.bmp", ofstream::binary);
-    if (!rightRotatedImage){
-        delete[] buff;
-        delete[] rightRot;
-        image.close();
-        cerr << "Error" << endl;
-        return 1;
-    }
-    image.seekg(0, std::ifstream::beg);
-    rightRotatedImage << image.rdbuf();
-    rightRotatedImage.seekp(sizeof(BITMAPFILEHEADER));
-    rightRotatedImage.write(reinterpret_cast<char*>(&info), sizeof(BITMAPINFOHEADER));
-    rightRotatedImage.seekp(start);
-    rightRotatedImage.write(rightRot, size*3);
-    rightRotatedImage.close();
-
-// влево
-    char* leftRot = new char[3 * size];
-    for (int i = 0; i < height; ++i){
-        for (int j = 0; j < width; ++j){
-            int newIL = ((height - i - 1) + j*height) * 3;
-            int oldIL = (i * width + j) * 3;
-
-            for (int k = 0; k < 3; ++k)
-                leftRot[newIL + k] = buff[oldIL + k];
+                newFile[newIndex + k] = oldFile[oldIndex + k];
         }
     }
+}
 
-    ofstream leftRotatedImage("Left.bmp", ofstream::binary);
-    if (!leftRotatedImage){
-        delete[] buff;
-        delete[] leftRot;
-        image.close();
-        cerr << "Error" << endl;
+void left(const unsigned char* oldFile, unsigned char* newFile, int width, int height) {
+    for (int i = 0; i < height; ++i){
+        for (int j = 0; j < width; ++j){
+            int newIndex = ((height - i - 1) + j*height) * 3;
+            int oldIndex = (i * width + j) * 3;
+
+            for (int k = 0; k < 3; ++k)
+                newFile[newIndex + k] = oldFile[oldIndex + k];
+        }
+    }
+}
+
+int main() {
+    ifstream bmpImage("2.bmp", ios::binary);
+
+    if (!bmpImage) {
+        cout << "Failed to open the input file!" << endl;
         return 1;
     }
-    image.seekg(0, std::ifstream::beg);
-    leftRotatedImage << image.rdbuf();
-    image.close();
-    leftRotatedImage.seekp(sizeof(BITMAPFILEHEADER));
-    leftRotatedImage.write(reinterpret_cast<char*>(&info), sizeof(BITMAPINFOHEADER));
-    leftRotatedImage.seekp(start);
-    leftRotatedImage.write(leftRot, size*3);
-    leftRotatedImage.close();
 
+    BMPHeader bmpHeader{};
+    bmpImage.read(reinterpret_cast<char*>(&bmpHeader), sizeof(BMPHeader));
 
+    int weight = bmpHeader.fileSize;
+    cout << "The size of memory being allocated: " << weight << " bytes" << endl;
+    int width = bmpHeader.width;
+    int height = bmpHeader.height;
+    int size = bmpHeader.imageSize;
+    cout << width << endl;
+    cout << height << endl;
+    cout << size << endl;
+    unsigned char* buff = new unsigned char[size];
+    bmpImage.read(reinterpret_cast<char*>(buff), size);
+
+    bmpImage.close();
+
+    unsigned char* rotatedImageR = new unsigned char[size]; // для поворота по часовой стрелке
+    unsigned char* rotatedImageL = new unsigned char[size]; // для поворота против часовой стрелки
+
+    right(buff, rotatedImageR, width, height);
+    left(buff, rotatedImageL, width, height);
+
+    ofstream clockwiseImage("image_rotated_R.bmp", ios::binary);
+    ofstream counterClockwiseImage("image_rotated_L.bmp", ios::binary);
+
+    clockwiseImage.write(reinterpret_cast<const char*>(&bmpHeader), sizeof(BMPHeader));
+    clockwiseImage.write(reinterpret_cast<const char*>(rotatedImageR), size);
+
+    counterClockwiseImage.write(reinterpret_cast<const char*>(&bmpHeader), sizeof(BMPHeader));
+    counterClockwiseImage.write(reinterpret_cast<const char*>(rotatedImageL), size);
+
+    clockwiseImage.close();
+    counterClockwiseImage.close();
 
     delete[] buff;
-    delete[] rightRot;
-    delete[] leftRot;
-
+    delete[] rotatedImageR;
+    delete[] rotatedImageL;
 
     return 0;
 }

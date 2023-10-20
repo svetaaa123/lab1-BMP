@@ -1,3 +1,6 @@
+//Дрягалова Светлана б18
+//st119022@student.spbu.ru
+
 #include <iostream>
 #include <fstream>
 using namespace std;

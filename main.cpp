@@ -65,9 +65,9 @@ int main() {
     int width = bmpHeader.width;
     int height = bmpHeader.height;
     int size = width * height * 3;
-    //cout << width << endl;
-    //cout << height << endl;
-    //cout << size << endl;
+    cout << width << endl;
+    cout << height << endl;
+    cout << size << endl;
     unsigned char* buff = new unsigned char[size];
     bmpImage.read(reinterpret_cast<char*>(buff), size);
 
@@ -78,6 +78,11 @@ int main() {
 
     right(buff, rotatedImageR, width, height);
     left(buff, rotatedImageL, width, height);
+
+
+    bmpHeader.dataOffset = sizeof(BMPHeader);
+    bmpHeader.width = height;
+    bmpHeader.height = width;
 
     ofstream clockwiseImage("image_rotated_R.bmp", ios::binary);
     ofstream counterClockwiseImage("image_rotated_L.bmp", ios::binary);

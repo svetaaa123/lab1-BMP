@@ -64,10 +64,10 @@ int main() {
     cout << "The size of memory being allocated: " << weight << " bytes" << endl;
     int width = bmpHeader.width;
     int height = bmpHeader.height;
-    int size = bmpHeader.imageSize;
-    cout << width << endl;
-    cout << height << endl;
-    cout << size << endl;
+    int size = width * height * 3;
+    //cout << width << endl;
+    //cout << height << endl;
+    //cout << size << endl;
     unsigned char* buff = new unsigned char[size];
     bmpImage.read(reinterpret_cast<char*>(buff), size);
 
